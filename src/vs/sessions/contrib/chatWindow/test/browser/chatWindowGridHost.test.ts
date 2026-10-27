@@ -170,6 +170,26 @@ suite('ChatWindowGridHost', () => {
 		store.dispose();
 	});
 
+	test('terminals shown as the window is restored, before its first layout, show without an error once it is laid out', () => {
+		const store = disposables.add(new DisposableStore());
+		const container = $('.chat-window-host');
+		mainWindow.document.body.appendChild(container);
+		store.add(toDisposable(() => container.remove()));
+		const boxes = new Map<SessionGridCell, IBox>();
+		const cells = new Map<SessionGridCell, ChatWindowCellView>();
+		for (const cell of [SessionGridCell.Chat, SessionGridCell.SidePane, SessionGridCell.Terminals, SessionGridCell.Column]) {
+			const view = store.add(new ChatWindowCellView(cell, { minimumWidth: cell === SessionGridCell.Column ? COLUMN_WIDTH : 100, maximumWidth: cell === SessionGridCell.Column ? COLUMN_WIDTH : Number.POSITIVE_INFINITY, minimumHeight: 50, maximumHeight: Number.POSITIVE_INFINITY }));
+			view.setContent({ element: $('div'), layout: (width, height, top, left) => boxes.set(cell, { top, left, width, height }) });
+			cells.set(cell, view);
+		}
+		const host = store.add(new ChatWindowGridHost(container, cells, (cell, axis) => getChatWindowDefaultSizing(cell, axis)));
+		host.apply(computeSessionGridLayout(state({ terminalsVisible: false })));
+		host.apply(computeSessionGridLayout(state({ terminalsVisible: true })));
+		host.layoutGrid(WIDTH, HEIGHT);
+		assert.deepStrictEqual(boxes.get(SessionGridCell.Terminals)!.height > 0, true);
+		store.dispose();
+	});
+
 	test('a mode shown with the terminals hidden does not squeeze them when it shows again with them', () => {
 		const store = disposables.add(new DisposableStore());
 		const { host, boxes } = createHost(store);
