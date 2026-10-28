@@ -41,6 +41,7 @@ import { IconBadge, NumberBadge } from '../../../workbench/services/activity/com
 import { TestContextViewService } from './testContextViewService.js';
 import '../../../base/browser/ui/tree/media/tree.css';
 import '../../browser/parts/media/sessionView.css';
+import { ChatWindowIdContext } from '../../services/chatWindow/browser/chatWindowService.js';
 
 interface ITestEntry {
 	readonly id: string;
@@ -728,6 +729,16 @@ suite('Sessions - Session Activity Bar', () => {
 		await timeout(0);
 
 		assert.deepStrictEqual(ran, ['test.browser']);
+	});
+
+	test('an entry acts on the chat window its strip is part of, which it is told by the id of that window', async () => {
+		const { label, ranWith, contextKeyService } = createActivityBar(store, [browser]);
+
+		ChatWindowIdContext.bindTo(contextKeyService).set(7);
+		label('Browser').click();
+		await timeout(0);
+
+		assert.deepStrictEqual(ranWith, [['test.browser', { chatWindowId: 7 }]]);
 	});
 
 	test('shows a checked entry as pressed and hides what it shows when it is clicked or activated by keyboard', async () => {
